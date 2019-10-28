@@ -7,6 +7,7 @@ public class Game : PersistableObject
     public PersistentStorage storage;
 
     public KeyCode createKey = KeyCode.C;
+    public KeyCode destroyKey = KeyCode.X;
     public KeyCode newGameKey = KeyCode.N;
     public KeyCode saveKey = KeyCode.S;
     public KeyCode loadKey = KeyCode.L;
@@ -24,6 +25,10 @@ public class Game : PersistableObject
         if (Input.GetKey(createKey))
         {
             CreateShape();
+        }
+        else if (Input.GetKeyDown(destroyKey))
+        {
+            DestroyShape();
         }
         else if (Input.GetKeyDown(newGameKey))
         {
@@ -87,6 +92,18 @@ public class Game : PersistableObject
             Shape instance = shapeFactory.Get(shapeId, materialId);
             instance.Load(reader);
             shapes.Add(instance);
+        }
+    }
+
+    void DestroyShape()
+    {
+        if (shapes.Count > 0)
+        {
+            int index = Random.Range(0, shapes.Count);
+            Destroy(shapes[index].gameObject);
+            int lastIndex = shapes.Count - 1;
+            shapes[index] = shapes[lastIndex];
+            shapes.RemoveAt(index);
         }
     }
 }
