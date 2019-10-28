@@ -12,6 +12,8 @@ public class Game : PersistableObject
     public KeyCode loadKey = KeyCode.L;
     List<Shape> shapes;
 
+    const int saveVersion = 1;
+
     private void Awake()
     {
         shapes = new List<Shape>();
@@ -29,7 +31,7 @@ public class Game : PersistableObject
         }
         else if (Input.GetKeyDown(saveKey))
         {
-            storage.Save(this);
+            storage.Save(this, saveVersion);
         }
         else if (Input.GetKeyDown(loadKey))
         {
@@ -40,12 +42,13 @@ public class Game : PersistableObject
 
     void CreateShape()
     {
-        Shape o = shapeFactory.GetRandom();
-        Transform t = o.transform;
+        Shape instance = shapeFactory.GetRandom();
+        Transform t = instance.transform;
         t.localPosition = Random.insideUnitSphere * 5f;
         t.localRotation = Random.rotation;
         t.localScale = Vector3.one * Random.Range(0.1f, 1f);
-        shapes.Add(o);
+        instance.SetColor(Random.ColorHSV(0f, 1f, 0.5f, 1f, 0.25f, 1f, 1f, 1f));
+        shapes.Add(instance);
     }
 
     void BeginNewGame()
@@ -62,16 +65,26 @@ public class Game : PersistableObject
         writer.Write(shapes.Count);
         for (int i = 0; i < shapes.Count; i++)
         {
+            writer.Write(shapes[i].ShapeId);
+            writer.Write(shapes[i].MaterialId);
             shapes[i].Save(writer);
         }
     }
 
     public override void Load(GameDataReader reader)
     {
-        int count = reader.ReadInt();
+        int version = reader.Version;
+        if (version > saveVersion)
+        {
+            Debug.LogError("Unsupported future save version " + version);
+            return;
+        }
+        int count = version <= 0 ? -version : reader.ReadInt();
         for (int i = 0; i < count; i++)
         {
-            Shape instance = shapeFactory.Get(0);
+            int shapeId = version > 0 ? reader.ReadInt() : 0;
+            int materialId = version > 0 ? reader.ReadInt() : 0;
+            Shape instance = shapeFactory.Get(shapeId, materialId);
             instance.Load(reader);
             shapes.Add(instance);
         }
